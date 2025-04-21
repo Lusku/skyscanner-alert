@@ -25,7 +25,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser
           sudo apt-get install -y chromium-chromedriver
-          sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+          if [ ! -f /usr/bin/chromedriver ]; then
+            sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+          fi
 
       - name: 🔐 Exportar contraseña de email desde Secret
         run: echo "EMAIL_ACCESS_CODE=${{ secrets.EMAIL_ACCESS_CODE }}" >> $GITHUB_ENV
