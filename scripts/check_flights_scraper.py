@@ -11,10 +11,12 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from utils.email_sender import send_email
 
-CONFIG_URL = "https://raw.githubusercontent.com/tu_usuario/tu_repo/main/config/flight_params.json"
+CONFIG_URL = "https://raw.githubusercontent.com/Lusku/skyscanner-alert/main/config/flight_params.json"
 
 def load_config():
     response = requests.get(CONFIG_URL)
+    print("[DEBUG] Respuesta cruda desde GitHub:")
+    print(response.text)
     return json.loads(response.text)
 
 def build_url(config):
