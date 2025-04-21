@@ -63,12 +63,17 @@ def main():
     if not flights:
         print("No se encontraron vuelos.")
         return
+    else:
+        print("[DEBUG] Vuelos encontrados:")
+        for f in flights:
+            print(f)
 
     body = "\n\n".join([
         f"{f['price']} - {f['airline']} - Ida: {f['departure']} / Vuelta: {f['return']}" for f in flights
     ])
-
+    print("[DEBUG] Tratando de enviar email a : ", config["emails"])
+    print("[DEBUG] Contenido del email:\n", body)
     send_email(config["emails"], "Top 3 vuelos baratos desde Skyscanner", body)
-
+    print("[DEBUG] Email enviado correctamente:\n", body)
 if __name__ == "__main__":
     main()
