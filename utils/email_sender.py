@@ -1,9 +1,10 @@
 import smtplib
+import os
 from email.message import EmailMessage
 
 def send_email(to_list, subject, body):
     EMAIL_ADDRESS = "daniel_delrio@hotmail.es"
-    EMAIL_PASSWORD = "TU_APP_PASSWORD"
+    EMAIL_PASSWORD = os.getenv("EMAIL_ACCESS_CODE")
 
     msg = EmailMessage()
     msg["Subject"] = subject
