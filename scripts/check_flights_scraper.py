@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from utils.email_sender import send_email
+from selenium.webdriver.chrome.service import Service
 
 CONFIG_URL = "https://raw.githubusercontent.com/Lusku/skyscanner-alert/main/config/flight_params.json"
 
@@ -34,7 +35,15 @@ def scrape_flights(url):
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    driver = webdriver.Chrome(options=options)
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.binary_location = "/snap/bin/chromium"
+
+    service = Service("/usr/lib/chromium-browser/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
+
     driver.get(url)
 
     time.sleep(15)  # espera a que cargue todo
