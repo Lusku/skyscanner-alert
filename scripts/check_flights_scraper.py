@@ -3,6 +3,7 @@ import time
 import requests
 import sys
 import os
+import tempfile
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -35,9 +36,10 @@ def scrape_flights(url):
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
+    # Crear una carpeta temporal para el perfil de usuario
+    user_data_dir = tempfile.mkdtemp()
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+
     options.binary_location = "/snap/bin/chromium"
 
     service = Service("/usr/lib/chromium-browser/chromedriver")
