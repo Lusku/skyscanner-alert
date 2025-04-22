@@ -52,14 +52,21 @@ def scrape_flights_from_homepage(config):
 
     try:
         driver.get("https://www.skyscanner.es/")
-        time.sleep(3)  # esperar a que aparezca modal de cookies
 
-        # Aceptar cookies si es necesario
+        # Esperar a que el DOM principal esté listo
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
+
+        # Aceptar cookies si aparece el modal
         try:
-            accept = wait.until(EC.element_to_be_clickable((By.ID, "acceptCookieButton")))
-            accept.click()
+            accept_button = wait.until(EC.element_to_be_clickable((By.ID, "acceptCookieButton")))
+            accept_button.click()
+            print("[DEBUG] Cookies aceptadas")
+            time.sleep(1)
         except:
-            pass  # no apareció
+            print("[DEBUG] No se encontró modal de cookies")
+
+        # Espera adicional para permitir carga del contenido
+        time.sleep(2)
 
         # Click en origen
         origin_button = wait.until(EC.element_to_be_clickable((By.ID, "OriginButton")))
