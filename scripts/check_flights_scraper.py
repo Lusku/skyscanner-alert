@@ -7,6 +7,12 @@ import tempfile
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import tempfile
+import time
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -30,52 +36,110 @@ def build_url(config):
         f"?adults=1"
     )
 
-def scrape_flights(url):
+def scrape_flights_from_homepage(config):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.binary_location = "/usr/bin/chromium-browser"
 
-    # Crear una carpeta temporal para el perfil de usuario
     user_data_dir = tempfile.mkdtemp()
     options.add_argument(f"--user-data-dir={user_data_dir}")
 
-    options.binary_location = "/snap/bin/chromium"
-
     service = Service("/usr/lib/chromium-browser/chromedriver")
     driver = webdriver.Chrome(service=service, options=options)
+    wait = WebDriverWait(driver, 15)
 
-    driver.get(url)
-
-    time.sleep(15)  # espera a que cargue todo
-
-    results = []
     try:
-        cards = driver.find_elements(By.CSS_SELECTOR, "div[data-test-id='offer-listing']")[:3]
-        for card in cards:
-            price = card.find_element(By.CSS_SELECTOR, "div[data-test-id='listing-price-dollars']").text
-            airline = card.find_element(By.CSS_SELECTOR, "span[data-test-id='airline-name']").text
-            times = card.find_elements(By.CSS_SELECTOR, "div[data-test-id='departure-time']")
-            departure = times[0].text
-            arrival = times[1].text
+        driver.get("https://www.skyscanner.es/")
+        time.sleep(3)  # esperar a que aparezca modal de cookies
 
-            results.append({
-                "price": price,
-                "airline": airline,
-                "departure": departure,
-                "return": arrival
-            })
-    except Exception as e:
-        print("Error durante scraping:", e)
+        # Aceptar cookies si es necesario
+        try:
+            accept = wait.until(EC.element_to_be_clickable((By.ID, "acceptCookieButton")))
+            accept.click()
+        except:
+            pass  # no apareció
+
+        # Click en origen
+        origin_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.SearchControls_origin__MJExN button")))
+        origin_button.click()
+        time.sleep(1)
+
+        input_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Desde?']")))
+        input_field.clear()
+        input_field.send_keys(config["origin"])
+        time.sleep(1)
+        input_field.send_keys(Keys.DOWN, Keys.ENTER)
+
+        # Click en destino
+        dest_button = driver.find_element(By.CSS_SELECTOR, "div.SearchControls_DestinationContainer__YzRkM button")
+        dest_button.click()
+        time.sleep(1)
+
+        dest_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='A dónde?']")))
+        dest_input.clear()
+        dest_input.send_keys(config["destination"])
+        time.sleep(1)
+        dest_input.send_keys(Keys.DOWN, Keys.ENTER)
+
+        # Fechas
+        date_button = driver.find_element(By.CSS_SELECTOR, "div.SearchControls_DatePicker__ZjxK6 button")
+        date_button.click()
+        time.sleep(1)
+
+        # Seleccionar la fecha de ida
+        departure = config["departure_date"]  # formato: yyyy-mm-dd
+        return_ = config["return_date"]       # formato: yyyy-mm-dd
+
+        def select_date(fecha):
+            parts = fecha.split("-")
+            yyyy, mm, dd = parts[0], parts[1], parts[2].lstrip("0")
+            selector = f"button[aria-label*='{int(dd)} de {get_spanish_month(mm)} de {yyyy}']"
+            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector))).click()
+            time.sleep(1)
+
+        select_date(departure)
+        select_date(return_)
+
+        # Confirmar fechas
+        confirm_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='search-controls-submit-button']")))
+        confirm_button.click()
+
+        # Esperar a resultados
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.DayViewItinerary")))
+        time.sleep(5)
+
+        # Extraer títulos de los 3 vuelos más baratos
+        flight_titles = driver.find_elements(By.CSS_SELECTOR, "div.DayViewItinerary")[:3]
+        results = []
+        for f in flight_titles:
+            try:
+                text = f.text
+                results.append(text)
+            except:
+                continue
+
+        print("[DEBUG] Vuelos encontrados:")
+        for r in results:
+            print(r)
+
+        return results
+
     finally:
         driver.quit()
 
-    return results
+
+def get_spanish_month(mm):
+    meses = {
+        "01": "enero", "02": "febrero", "03": "marzo", "04": "abril", "05": "mayo", "06": "junio",
+        "07": "julio", "08": "agosto", "09": "septiembre", "10": "octubre", "11": "noviembre", "12": "diciembre"
+    }
+    return meses[mm]
 
 def main():
     config = load_config()
-    url = build_url(config)
-    flights = scrape_flights(url)
+    flights = scrape_flights_from_homepage(config)
 
     if not flights:
         print("No se encontraron vuelos.")
