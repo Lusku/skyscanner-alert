@@ -51,19 +51,14 @@ def scrape_flights_from_homepage(config):
     wait = WebDriverWait(driver, 15)
 
     try:
-        driver.get("https://www.skyscanner.es/")
-
-        # Esperar a que el DOM principal esté listo
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
-
-        # Aceptar cookies si aparece el modal
-        try:
-            accept_button = wait.until(EC.element_to_be_clickable((By.ID, "acceptCookieButton")))
-            accept_button.click()
-            print("[DEBUG] Cookies aceptadas")
-            time.sleep(1)
-        except:
-            print("[DEBUG] No se encontró modal de cookies")
+        essential_button = wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Aceptar solo lo esencial')]"))
+        )
+        essential_button.click()
+        print("[DEBUG] Cookie modal cerrado")
+        time.sleep(1)
+    except Exception as e:
+        print(f"[DEBUG] No se encontró modal de cookies: {e}")
 
         # Espera adicional para permitir carga del contenido
         time.sleep(2)
