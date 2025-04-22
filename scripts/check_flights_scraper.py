@@ -62,21 +62,17 @@ def scrape_flights_from_homepage(config):
             pass  # no apareció
 
         # Click en origen
-        origin_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.SearchControls_origin__MJExN button")))
+        origin_button = wait.until(EC.element_to_be_clickable((By.ID, "OriginButton")))
         origin_button.click()
+        origin_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Desde?']")))
+        origin_input.clear()
+        origin_input.send_keys(config["origin"])
         time.sleep(1)
-
-        input_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Desde?']")))
-        input_field.clear()
-        input_field.send_keys(config["origin"])
-        time.sleep(1)
-        input_field.send_keys(Keys.DOWN, Keys.ENTER)
+        origin_input.send_keys(Keys.DOWN, Keys.ENTER)
 
         # Click en destino
-        dest_button = driver.find_element(By.CSS_SELECTOR, "div.SearchControls_DestinationContainer__YzRkM button")
-        dest_button.click()
-        time.sleep(1)
-
+        destination_button = wait.until(EC.element_to_be_clickable((By.ID, "DestinationButton")))
+        destination_button.click()
         dest_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='A dónde?']")))
         dest_input.clear()
         dest_input.send_keys(config["destination"])
@@ -84,7 +80,7 @@ def scrape_flights_from_homepage(config):
         dest_input.send_keys(Keys.DOWN, Keys.ENTER)
 
         # Fechas
-        date_button = driver.find_element(By.CSS_SELECTOR, "div.SearchControls_DatePicker__ZjxK6 button")
+        date_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='dates-btn']")))
         date_button.click()
         time.sleep(1)
 
