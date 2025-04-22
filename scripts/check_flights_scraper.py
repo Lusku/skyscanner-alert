@@ -51,19 +51,22 @@ def scrape_flights_from_homepage(config):
     wait = WebDriverWait(driver, 15)
 
     try:
-        essential_button = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Aceptar solo lo esencial')]"))
-        )
-        essential_button.click()
-        print("[DEBUG] Cookie modal cerrado")
-        time.sleep(1)
-    except Exception as e:
-        print(f"[DEBUG] No se encontró modal de cookies: {e}")
+        driver.get("https://www.skyscanner.es/")
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
-        # Espera adicional para permitir carga del contenido
-        time.sleep(2)
+        # Cierre de cookies
+        try:
+            print("[DEBUG] Intentando cerrar cookies...")
+            for btn in driver.find_elements(By.TAG_NAME, "button"):
+                if "Aceptar solo lo esencial" in btn.text:
+                    btn.click()
+                    print("[DEBUG] Botón de cookies encontrado y pulsado")
+                    time.sleep(1)
+                    break
+        except Exception as e:
+            print(f"[DEBUG] Cookie modal no visible: {e}")
 
-        # Click en origen
+        # ORIGEN
         origin_button = wait.until(EC.element_to_be_clickable((By.ID, "OriginButton")))
         origin_button.click()
         origin_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='Desde?']")))
@@ -72,7 +75,7 @@ def scrape_flights_from_homepage(config):
         time.sleep(1)
         origin_input.send_keys(Keys.DOWN, Keys.ENTER)
 
-        # Click en destino
+        # DESTINO
         destination_button = wait.until(EC.element_to_be_clickable((By.ID, "DestinationButton")))
         destination_button.click()
         dest_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='A dónde?']")))
@@ -81,43 +84,30 @@ def scrape_flights_from_homepage(config):
         time.sleep(1)
         dest_input.send_keys(Keys.DOWN, Keys.ENTER)
 
-        # Fechas
+        # FECHAS
         date_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='dates-btn']")))
         date_button.click()
         time.sleep(1)
 
-        # Seleccionar la fecha de ida
-        departure = config["departure_date"]  # formato: yyyy-mm-dd
-        return_ = config["return_date"]       # formato: yyyy-mm-dd
-
         def select_date(fecha):
-            parts = fecha.split("-")
-            yyyy, mm, dd = parts[0], parts[1], parts[2].lstrip("0")
+            yyyy, mm, dd = fecha.split("-")
             selector = f"button[aria-label*='{int(dd)} de {get_spanish_month(mm)} de {yyyy}']"
             wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector))).click()
             time.sleep(1)
 
-        select_date(departure)
-        select_date(return_)
+        select_date(config["departure_date"])
+        select_date(config["return_date"])
 
-        # Confirmar fechas
+        # Confirmar búsqueda
         confirm_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='search-controls-submit-button']")))
         confirm_button.click()
 
-        # Esperar a resultados
+        # Esperar resultados
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.DayViewItinerary")))
         time.sleep(5)
 
-        # Extraer títulos de los 3 vuelos más baratos
         flight_titles = driver.find_elements(By.CSS_SELECTOR, "div.DayViewItinerary")[:3]
-        results = []
-        for f in flight_titles:
-            try:
-                text = f.text
-                results.append(text)
-            except:
-                continue
-
+        results = [f.text for f in flight_titles if f.text.strip()]
         print("[DEBUG] Vuelos encontrados:")
         for r in results:
             print(r)
@@ -126,6 +116,7 @@ def scrape_flights_from_homepage(config):
 
     finally:
         driver.quit()
+
 
 
 def get_spanish_month(mm):
@@ -147,9 +138,8 @@ def main():
         for f in flights:
             print(f)
 
-    body = "\n\n".join([
-        f"{f['price']} - {f['airline']} - Ida: {f['departure']} / Vuelta: {f['return']}" for f in flights
-    ])
+    body = "\n\n".join(flights)
+
     print("[DEBUG] Tratando de enviar email a : ", config["emails"])
     print("[DEBUG] Contenido del email:\n", body)
     send_email(config["emails"], "Top 3 vuelos baratos desde Skyscanner", body)
