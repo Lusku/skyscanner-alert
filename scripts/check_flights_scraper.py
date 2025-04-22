@@ -52,7 +52,7 @@ def scrape_flights_from_homepage(config):
 
     try:
         driver.get("https://www.skyscanner.es/")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
 
         # Cierre de cookies
         try:
@@ -65,6 +65,9 @@ def scrape_flights_from_homepage(config):
                     break
         except Exception as e:
             print(f"[DEBUG] Cookie modal no visible: {e}")
+
+        # DEBUG: Captura antes de fallo posible
+        driver.save_screenshot("pantalla_debug.png")
 
         # ORIGEN
         origin_button = wait.until(EC.element_to_be_clickable((By.ID, "OriginButton")))
